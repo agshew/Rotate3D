@@ -39,3 +39,9 @@ The final application evolved significantly from the initial concept based on it
 4.  **Automated & Refined Animation**: The gimbal lock demonstration went from a simple animation to a sophisticated, multi-step sequence that explicitly "wiggles" the affected axes to make the lock unmistakable.
 5.  **Simultaneous Demo Button**: This was added to streamline the user experience for direct comparison.
 6.  **"Shadow Cube" Removed**: An intermediate concept of a "shadow cube" was implemented and later removed in favor of the more effective side-by-side layout.
+
+---
+
+## Total Development Time
+
+**Total Time:** Approximately 1 hour and 40 minutes.
