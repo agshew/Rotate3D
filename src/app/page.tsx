@@ -24,7 +24,18 @@ export default function Home() {
 
   const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
     if (isAnimating) return;
-    setRotation(prev => ({ ...prev, [axis]: value }));
+    
+    const newRotation = { ...rotation, [axis]: value };
+    setRotation(newRotation);
+
+    const euler = new THREE.Euler(
+      newRotation.x * (Math.PI / 180),
+      newRotation.y * (Math.PI / 180),
+      newRotation.z * (Math.PI / 180),
+      'XYZ'
+    );
+    const newQuaternion = new THREE.Quaternion().setFromEuler(euler);
+    setQuaternion(newQuaternion);
   };
 
   const handleDemoClick = () => {
@@ -131,20 +142,6 @@ export default function Home() {
       cancelAnimationFrame(frameId);
     };
   }, [isAnimating]);
-
-  useEffect(() => {
-    // When not animating, the quaternion view should match the euler view exactly.
-    if (isAnimating) return;
-
-    const euler = new THREE.Euler(
-      rotation.x * (Math.PI / 180),
-      rotation.y * (Math.PI / 180),
-      rotation.z * (Math.PI / 180),
-      'XYZ' // Match the order in scene.tsx
-    );
-    const newQuaternion = new THREE.Quaternion().setFromEuler(euler);
-    setQuaternion(newQuaternion);
-  }, [rotation, isAnimating]);
 
   const isGimbalLockImminent = Math.abs(rotation.y) >= 88;
   const buttonText = isAnimating ? 'Animating...' : (demoFinished ? 'Reset View' : 'Demonstrate Gimbal Lock');
