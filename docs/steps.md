@@ -1,4 +1,3 @@
-
 # Development Steps
 
 This document logs the conversation and iterative steps taken to build the Rotate3D application.

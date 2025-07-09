@@ -1,4 +1,3 @@
-
 # App Name: Rotate3D - Final Blueprint
 
 This document reflects the final state of the Rotate3D application after a series of iterative developments. It captures the current features and design, highlighting the evolution from the initial concept.
