@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type RotationMode = 'quaternion' | 'euler';
 
@@ -18,6 +19,11 @@ export default function Home() {
 
   const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
     setRotation(prev => ({ ...prev, [axis]: value }));
+  };
+
+  const handleGimbalLockDemo = () => {
+    setMode('euler');
+    setRotation({ x: 0, y: 90, z: 0 });
   };
 
   useEffect(() => {
@@ -53,7 +59,7 @@ export default function Home() {
             <div className="space-y-4">
               <Label>Rotation Mode</Label>
               <RadioGroup
-                defaultValue="quaternion"
+                value={mode}
                 onValueChange={(value: RotationMode) => setMode(value)}
                 className="flex space-x-4"
               >
@@ -135,6 +141,9 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Try it: Select 'Euler' mode and set the Y-axis rotation to 90° or -90°. Then, try to rotate on the X and Z axes and observe how they affect the object in the same way.
                 </p>
+                <Button onClick={handleGimbalLockDemo} variant="outline" className="w-full">
+                  Demonstrate Gimbal Lock
+                </Button>
             </div>
             
             {isGimbalLockImminent && (
