@@ -89,6 +89,11 @@ export default function Home() {
     setIsEulerAnimating(true);
   };
 
+  const handleBothDemosClick = () => {
+    handleQuatDemoClick();
+    handleEulerDemoClick();
+  };
+
   // Animation effect for Quaternion
   useEffect(() => {
     if (!isQuatAnimating) return;
@@ -135,7 +140,7 @@ export default function Home() {
     };
     frameId = requestAnimationFrame(animateQuat);
     return () => cancelAnimationFrame(frameId);
-  }, [isQuatAnimating, quatEuler]);
+  }, [isQuatAnimating]);
 
   // Animation effect for Euler
   useEffect(() => {
@@ -175,7 +180,7 @@ export default function Home() {
     };
     frameId = requestAnimationFrame(animateEuler);
     return () => cancelAnimationFrame(frameId);
-  }, [isEulerAnimating, eulerRotation]);
+  }, [isEulerAnimating]);
   
   const isGimbalLockImminent = Math.abs(eulerRotation.y) >= 88;
   
@@ -209,8 +214,16 @@ export default function Home() {
             <CardTitle className="font-headline text-3xl">Rotate3D</CardTitle>
             <CardDescription>Quaternion vs. Euler Rotation</CardDescription>
           </CardHeader>
-          <CardContent className="flex-grow flex flex-col gap-4 overflow-y-auto">
-            <div className="space-y-4 pt-4 border-t border-border">
+          <CardContent className="flex-grow flex flex-col gap-4 overflow-y-auto pt-4">
+            <Button
+              onClick={handleBothDemosClick}
+              className="w-full"
+              disabled={isQuatAnimating || isEulerAnimating}
+            >
+              {isQuatAnimating || isEulerAnimating ? 'Animating...' : 'Run Simultaneous Demonstration'}
+            </Button>
+            <Separator />
+            <div className="space-y-4">
               <h3 className="font-semibold">Quaternion Controls</h3>
               <p className="text-sm text-muted-foreground">Rotations are converted to quaternions, avoiding gimbal lock.</p>
               <div className="space-y-2">
