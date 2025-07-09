@@ -4,16 +4,12 @@ import * as THREE from 'three';
 import Scene from '@/components/scene';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type RotationMode = 'quaternion' | 'euler';
-
 export default function Home() {
-  const [mode, setMode] = useState<RotationMode>('quaternion');
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
   const [quaternion, setQuaternion] = useState(new THREE.Quaternion());
   const [isAnimating, setIsAnimating] = useState(false);
@@ -39,7 +35,6 @@ export default function Home() {
       return;
     }
 
-    setMode('euler');
     setRotation({ x: 0, y: 0, z: 0 }); // Reset to start position
 
     animationState.current = {
@@ -121,17 +116,32 @@ export default function Home() {
     setQuaternion(newQuaternion);
   }, [rotation]);
 
-  const isGimbalLockImminent = mode === 'euler' && Math.abs(rotation.y) >= 88;
+  const isGimbalLockImminent = Math.abs(rotation.y) >= 88;
   const buttonText = isAnimating ? 'Animating...' : (demoFinished ? 'Reset View' : 'Demonstrate Gimbal Lock');
 
   return (
     <main className="flex flex-col lg:flex-row h-screen w-screen p-4 gap-4 bg-background text-foreground overflow-auto">
-      <div className="flex-grow lg:w-2/3 h-1/2 lg:h-full rounded-lg overflow-hidden shadow-lg border border-border">
-        <Scene 
-          rotation={rotation}
-          rotationMode={mode}
-          backgroundColor="#222222"
-        />
+      <div className="flex-grow lg:w-2/3 flex flex-col lg:flex-row gap-4 h-full">
+        <div className="lg:w-1/2 h-1/2 lg:h-full flex flex-col gap-2">
+            <h2 className="text-center font-bold text-xl">Quaternion</h2>
+            <div className="flex-grow rounded-lg overflow-hidden shadow-lg border border-border">
+                <Scene 
+                  rotation={rotation}
+                  rotationMode={'quaternion'}
+                  backgroundColor="#222222"
+                />
+            </div>
+        </div>
+        <div className="lg:w-1/2 h-1/2 lg:h-full flex flex-col gap-2">
+            <h2 className="text-center font-bold text-xl">Euler</h2>
+            <div className="flex-grow rounded-lg overflow-hidden shadow-lg border border-border">
+                <Scene 
+                  rotation={rotation}
+                  rotationMode={'euler'}
+                  backgroundColor="#222222"
+                />
+            </div>
+        </div>
       </div>
       <div className="lg:w-1/3 h-auto lg:h-full lg:max-h-full flex flex-col">
         <Card className="h-full flex flex-col">
@@ -140,25 +150,7 @@ export default function Home() {
             <CardDescription>Quaternion vs. Euler Rotation</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col gap-6 overflow-y-auto">
-            <div className="space-y-4">
-              <Label>Rotation Mode</Label>
-              <RadioGroup
-                value={mode}
-                onValueChange={(value: RotationMode) => setMode(value)}
-                className="flex space-x-4"
-                disabled={isAnimating}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="quaternion" id="r-quaternion" />
-                  <Label htmlFor="r-quaternion">Quaternion</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="euler" id="r-euler" />
-                  <Label htmlFor="r-euler">Euler</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
+            
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -227,10 +219,10 @@ export default function Home() {
                   Gimbal lock is a problem with Euler angles where two of the three rotation axes can align, causing a loss of one degree of rotational freedom. This makes it impossible to rotate the object in certain ways. Quaternions avoid this issue entirely.
                 </p>
                  <p className="text-sm text-muted-foreground">
-                  A semi-transparent 'shadow' cube shows the rotation using the *other* method for comparison.
+                  This demo shows two cubes with the same rotation inputs. The left uses Quaternions, the right uses Euler angles.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Try it: Click the button below to see an automated demonstration. Notice how rotating on the X and Z axes produce a nearly identical "wobble" when the Y-axis is at 90°.
+                  Try it: Click the button below to see an automated demonstration. Notice how rotating on the X and Z axes produce a nearly identical "wobble" on the Euler cube when its Y-axis is at 90°, while the Quaternion cube rotates predictably.
                 </p>
                 <Button onClick={handleDemoClick} variant="outline" className="w-full" disabled={isAnimating}>
                   {buttonText}
@@ -242,7 +234,7 @@ export default function Home() {
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>Gimbal Lock!</AlertTitle>
                 <AlertDescription>
-                  With Y-axis at ~90°, the X and Z axes align. You've lost a degree of freedom. Notice how X and Z rotations now produce similar results.
+                  With Y-axis at ~90°, the X and Z axes align on the Euler cube. You've lost a degree of freedom. Notice how X and Z rotations now produce similar results.
                 </AlertDescription>
               </Alert>
             )}
