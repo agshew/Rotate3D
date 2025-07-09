@@ -126,7 +126,7 @@ export default function Home() {
             <h2 className="text-center font-bold text-xl">Quaternion</h2>
             <div className="flex-grow rounded-lg overflow-hidden shadow-lg border border-border">
                 <Scene 
-                  rotation={rotation}
+                  quaternion={quaternion}
                   rotationMode={'quaternion'}
                   backgroundColor="#222222"
                 />

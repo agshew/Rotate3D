@@ -4,12 +4,13 @@ import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 
 interface SceneProps {
-  rotation: { x: number; y: number; z: number };
+  rotation?: { x: number; y: number; z: number };
+  quaternion?: THREE.Quaternion;
   rotationMode: 'quaternion' | 'euler';
   backgroundColor: string;
 }
 
-const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, backgroundColor }) => {
+const Scene: React.FC<SceneProps> = ({ rotation, quaternion, rotationMode, backgroundColor }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -98,31 +99,27 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, backgroundColor }
 
   useEffect(() => {
     if (meshRef.current) {
-      const { x, y, z } = rotation;
-      // Convert degrees to radians and set a common Euler order
-      const euler = new THREE.Euler(
-        x * (Math.PI / 180),
-        y * (Math.PI / 180),
-        z * (Math.PI / 180),
-        'YXZ' 
-      );
-      
       const cube = meshRef.current;
-
-      // This is the key distinction for the demonstration.
-      if (rotationMode === 'euler') {
+      if (rotationMode === 'euler' && rotation) {
+        const { x, y, z } = rotation;
+        const euler = new THREE.Euler(
+          x * (Math.PI / 180),
+          y * (Math.PI / 180),
+          z * (Math.PI / 180),
+          'YXZ' 
+        );
         // For Euler mode, we set the .rotation property directly.
         // This method is susceptible to Gimbal Lock because it's based
         // on applying rotations sequentially around axes.
         cube.rotation.copy(euler);
-      } else { // 'quaternion' mode
-        // For Quaternion mode, we compute a quaternion from the same Euler angles.
+      } else if (rotationMode === 'quaternion' && quaternion) {
+        // For Quaternion mode, we are passed a pre-computed quaternion.
         // This represents the orientation as a single, unified rotation, which
         // avoids the inherent problems of Euler angle sequences.
-        cube.quaternion.setFromEuler(euler);
+        cube.quaternion.copy(quaternion);
       }
     }
-  }, [rotation, rotationMode]);
+  }, [rotation, quaternion, rotationMode]);
 
   return <div ref={mountRef} className="w-full h-full" data-ai-hint="3d render" />;
 };
