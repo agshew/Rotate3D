@@ -1,22 +1,35 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as THREE from 'three';
 import Scene from '@/components/scene';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Terminal } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 type RotationMode = 'quaternion' | 'euler';
 
 export default function Home() {
   const [mode, setMode] = useState<RotationMode>('quaternion');
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
+  const [quaternion, setQuaternion] = useState(new THREE.Quaternion());
 
   const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
     setRotation(prev => ({ ...prev, [axis]: value }));
   };
+
+  useEffect(() => {
+    const euler = new THREE.Euler(
+      rotation.x * (Math.PI / 180),
+      rotation.y * (Math.PI / 180),
+      rotation.z * (Math.PI / 180),
+      'YXZ' // Match the order in scene.tsx
+    );
+    const newQuaternion = new THREE.Quaternion().setFromEuler(euler);
+    setQuaternion(newQuaternion);
+  }, [rotation]);
 
   const isGimbalLockImminent = mode === 'euler' && Math.abs(rotation.y) >= 88;
 
@@ -97,6 +110,20 @@ export default function Home() {
                   value={[rotation.z]}
                   onValueChange={(value) => handleRotationChange('z', value[0])}
                 />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="font-semibold">Quaternion Values</h3>
+              <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1 text-sm font-mono">
+                <span className="text-muted-foreground">qW:</span>
+                <span className="text-right">{quaternion.w.toFixed(4)}</span>
+                <span className="text-muted-foreground">qX:</span>
+                <span className="text-right">{quaternion.x.toFixed(4)}</span>
+                <span className="text-muted-foreground">qY:</span>
+                <span className="text-right">{quaternion.y.toFixed(4)}</span>
+                <span className="text-muted-foreground">qZ:</span>
+                <span className="text-right">{quaternion.z.toFixed(4)}</span>
               </div>
             </div>
 
