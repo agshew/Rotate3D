@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import Scene from '@/components/scene';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,15 +16,65 @@ export default function Home() {
   const [mode, setMode] = useState<RotationMode>('quaternion');
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
   const [quaternion, setQuaternion] = useState(new THREE.Quaternion());
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const animationState = useRef({
+    startRotation: { x: 0, y: 0, z: 0 },
+    startTime: 0,
+  });
 
   const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
+    if (isAnimating) return;
     setRotation(prev => ({ ...prev, [axis]: value }));
   };
 
   const handleGimbalLockDemo = () => {
+    if (isAnimating) return;
     setMode('euler');
-    setRotation({ x: 0, y: 90, z: 0 });
+    
+    animationState.current.startRotation = rotation;
+    animationState.current.startTime = performance.now();
+
+    setIsAnimating(true);
   };
+
+  useEffect(() => {
+    if (!isAnimating) return;
+
+    let frameId: number;
+    const targetRotation = { x: 0, y: 90, z: 0 };
+    const duration = 1500;
+
+    const animate = (currentTime: number) => {
+      const { startRotation, startTime } = animationState.current;
+      const elapsedTime = currentTime - startTime;
+      const progress = Math.min(elapsedTime / duration, 1);
+      
+      const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+      const easedProgress = easeOutCubic(progress);
+
+      const newRotation = {
+        x: startRotation.x + (targetRotation.x - startRotation.x) * easedProgress,
+        y: startRotation.y + (targetRotation.y - startRotation.y) * easedProgress,
+        z: startRotation.z + (targetRotation.z - startRotation.z) * easedProgress,
+      };
+
+      setRotation(newRotation);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      } else {
+        setRotation(targetRotation);
+        setIsAnimating(false);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [isAnimating]);
 
   useEffect(() => {
     const euler = new THREE.Euler(
@@ -61,6 +111,7 @@ export default function Home() {
                 value={mode}
                 onValueChange={(value: RotationMode) => setMode(value)}
                 className="flex space-x-4"
+                disabled={isAnimating}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="quaternion" id="r-quaternion" />
@@ -86,6 +137,7 @@ export default function Home() {
                   step={1}
                   value={[rotation.x]}
                   onValueChange={(value) => handleRotationChange('x', value[0])}
+                  disabled={isAnimating}
                 />
               </div>
               <div className="space-y-2">
@@ -100,6 +152,7 @@ export default function Home() {
                   step={1}
                   value={[rotation.y]}
                   onValueChange={(value) => handleRotationChange('y', value[0])}
+                  disabled={isAnimating}
                 />
               </div>
               <div className="space-y-2">
@@ -114,6 +167,7 @@ export default function Home() {
                   step={1}
                   value={[rotation.z]}
                   onValueChange={(value) => handleRotationChange('z', value[0])}
+                  disabled={isAnimating}
                 />
               </div>
             </div>
@@ -143,8 +197,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Try it: Select 'Euler' mode and set the Y-axis rotation to 90° or -90°. Then, try to rotate on the X and Z axes and observe how they affect the object in the same way.
                 </p>
-                <Button onClick={handleGimbalLockDemo} variant="outline" className="w-full">
-                  Demonstrate Gimbal Lock
+                <Button onClick={handleGimbalLockDemo} variant="outline" className="w-full" disabled={isAnimating}>
+                  {isAnimating ? 'Animating...' : 'Demonstrate Gimbal Lock'}
                 </Button>
             </div>
             
