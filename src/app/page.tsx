@@ -45,7 +45,6 @@ export default function Home() {
         <Scene 
           rotation={rotation}
           rotationMode={mode}
-          objectColor="#3498db"
           backgroundColor="#222222"
         />
       </div>

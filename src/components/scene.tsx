@@ -6,11 +6,10 @@ import * as THREE from 'three';
 interface SceneProps {
   rotation: { x: number; y: number; z: number };
   rotationMode: 'quaternion' | 'euler';
-  objectColor: string;
   backgroundColor: string;
 }
 
-const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, backgroundColor }) => {
+const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, backgroundColor }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -39,16 +38,23 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
     rendererRef.current = renderer;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
     // 3D Object
     const geometry = new THREE.BoxGeometry(2, 2, 2);
-    const material = new THREE.MeshStandardMaterial({ color: objectColor });
-    const mesh = new THREE.Mesh(geometry, material);
+    const materials = [
+      new THREE.MeshStandardMaterial({ color: 0xff4136, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // right (+x) - red
+      new THREE.MeshStandardMaterial({ color: 0x2ecc40, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // left (-x) - green
+      new THREE.MeshStandardMaterial({ color: 0x0074d9, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // top (+y) - blue
+      new THREE.MeshStandardMaterial({ color: 0xffdc00, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // bottom (-y) - yellow
+      new THREE.MeshStandardMaterial({ color: 0xf012be, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // front (+z) - magenta
+      new THREE.MeshStandardMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // back (-z) - cyan
+    ];
+    const mesh = new THREE.Mesh(geometry, materials);
     meshRef.current = mesh;
     scene.add(mesh);
     
@@ -97,11 +103,11 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
       }
       // Dispose Three.js objects
       geometry.dispose();
-      material.dispose();
+      materials.forEach(material => material.dispose());
       shadowMaterial.dispose();
       renderer.dispose();
     };
-  }, [objectColor, backgroundColor]);
+  }, [backgroundColor]);
 
   useEffect(() => {
     if (meshRef.current && shadowMeshRef.current) {
