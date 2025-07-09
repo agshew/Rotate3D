@@ -17,10 +17,12 @@ export default function Home() {
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
   const [quaternion, setQuaternion] = useState(new THREE.Quaternion());
   const [isAnimating, setIsAnimating] = useState(false);
+  const [demoFinished, setDemoFinished] = useState(false);
 
   const animationState = useRef({
     startRotation: { x: 0, y: 0, z: 0 },
     startTime: 0,
+    step: 0,
   });
 
   const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
@@ -28,35 +30,65 @@ export default function Home() {
     setRotation(prev => ({ ...prev, [axis]: value }));
   };
 
-  const handleGimbalLockDemo = () => {
+  const handleDemoClick = () => {
     if (isAnimating) return;
+
+    if (demoFinished) {
+      setRotation({ x: 0, y: 0, z: 0 });
+      setDemoFinished(false);
+      return;
+    }
+
     setMode('euler');
-    
-    animationState.current.startRotation = rotation;
-    animationState.current.startTime = performance.now();
+    setRotation({ x: 0, y: 0, z: 0 }); // Reset to start position
+
+    animationState.current = {
+      startRotation: { x: 0, y: 0, z: 0 },
+      startTime: performance.now(),
+      step: 0,
+    };
 
     setIsAnimating(true);
+    setDemoFinished(false);
   };
 
   useEffect(() => {
     if (!isAnimating) return;
 
     let frameId: number;
-    const targetRotation = { x: 0, y: 90, z: 0 };
-    const duration = 1500;
+    const animationSequence = [
+        { target: { x: 0, y: 90, z: 0 }, duration: 1500 },
+        { target: { x: 0, y: 90, z: 0 }, duration: 300 },
+        { target: { x: 45, y: 90, z: 0 }, duration: 1200 },
+        { target: { x: 0, y: 90, z: 0 }, duration: 1200 },
+        { target: { x: 0, y: 90, z: 0 }, duration: 300 },
+        { target: { x: 0, y: 90, z: 45 }, duration: 1200 },
+        { target: { x: 0, y: 90, z: 0 }, duration: 1200 },
+    ];
 
     const animate = (currentTime: number) => {
-      const { startRotation, startTime } = animationState.current;
-      const elapsedTime = currentTime - startTime;
-      const progress = Math.min(elapsedTime / duration, 1);
+      const state = animationState.current;
+      const currentStepConfig = animationSequence[state.step];
+
+      if (!currentStepConfig) {
+        setRotation({ x: 0, y: 90, z: 0 });
+        setIsAnimating(false);
+        setDemoFinished(true);
+        return;
+      }
+
+      const elapsedTime = currentTime - state.startTime;
+      const progress = Math.min(elapsedTime / currentStepConfig.duration, 1);
       
       const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
       const easedProgress = easeOutCubic(progress);
 
+      const targetRotation = currentStepConfig.target;
+
       const newRotation = {
-        x: startRotation.x + (targetRotation.x - startRotation.x) * easedProgress,
-        y: startRotation.y + (targetRotation.y - startRotation.y) * easedProgress,
-        z: startRotation.z + (targetRotation.z - startRotation.z) * easedProgress,
+        x: state.startRotation.x + (targetRotation.x - state.startRotation.x) * easedProgress,
+        y: state.startRotation.y + (targetRotation.y - state.startRotation.y) * easedProgress,
+        z: state.startRotation.z + (targetRotation.z - state.startRotation.z) * easedProgress,
       };
 
       setRotation(newRotation);
@@ -64,8 +96,10 @@ export default function Home() {
       if (progress < 1) {
         frameId = requestAnimationFrame(animate);
       } else {
-        setRotation(targetRotation);
-        setIsAnimating(false);
+        animationState.current.step += 1;
+        animationState.current.startTime = performance.now();
+        animationState.current.startRotation = newRotation;
+        frameId = requestAnimationFrame(animate);
       }
     };
 
@@ -88,6 +122,7 @@ export default function Home() {
   }, [rotation]);
 
   const isGimbalLockImminent = mode === 'euler' && Math.abs(rotation.y) >= 88;
+  const buttonText = isAnimating ? 'Animating...' : (demoFinished ? 'Reset View' : 'Demonstrate Gimbal Lock');
 
   return (
     <main className="flex flex-col lg:flex-row h-screen w-screen p-4 gap-4 bg-background text-foreground overflow-auto">
@@ -195,10 +230,10 @@ export default function Home() {
                   A semi-transparent 'shadow' cube shows the rotation using the *other* method for comparison.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Try it: Select 'Euler' mode and set the Y-axis rotation to 90° or -90°. Then, try to rotate on the X and Z axes and observe how they affect the object in the same way.
+                  Try it: Click the button below to see an automated demonstration. Notice how rotating on the X and Z axes produce a nearly identical "wobble" when the Y-axis is at 90°.
                 </p>
-                <Button onClick={handleGimbalLockDemo} variant="outline" className="w-full" disabled={isAnimating}>
-                  {isAnimating ? 'Animating...' : 'Demonstrate Gimbal Lock'}
+                <Button onClick={handleDemoClick} variant="outline" className="w-full" disabled={isAnimating}>
+                  {buttonText}
                 </Button>
             </div>
             
