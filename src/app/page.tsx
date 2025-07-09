@@ -138,6 +138,9 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Gimbal lock is a problem with Euler angles where two of the three rotation axes can align, causing a loss of one degree of rotational freedom. This makes it impossible to rotate the object in certain ways. Quaternions avoid this issue entirely.
                 </p>
+                 <p className="text-sm text-muted-foreground">
+                  A semi-transparent 'shadow' cube shows the rotation using the *other* method for comparison.
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Try it: Select 'Euler' mode and set the Y-axis rotation to 90° or -90°. Then, try to rotate on the X and Z axes and observe how they affect the object in the same way.
                 </p>

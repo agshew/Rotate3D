@@ -16,6 +16,7 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const meshRef = useRef<THREE.Mesh | null>(null);
+  const shadowMeshRef = useRef<THREE.Mesh | null>(null);
   const animationFrameId = useRef<number>();
 
   useEffect(() => {
@@ -51,6 +52,17 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
     meshRef.current = mesh;
     scene.add(mesh);
     
+    // Shadow Object
+    const shadowMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      wireframe: true,
+      opacity: 0.3,
+      transparent: true,
+    });
+    const shadowMesh = new THREE.Mesh(geometry, shadowMaterial);
+    shadowMeshRef.current = shadowMesh;
+    scene.add(shadowMesh);
+
     // Coordinate Axes (Standard colors for clarity)
     const axesHelper = new THREE.AxesHelper(2.5);
     scene.add(axesHelper);
@@ -86,12 +98,13 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
       // Dispose Three.js objects
       geometry.dispose();
       material.dispose();
+      shadowMaterial.dispose();
       renderer.dispose();
     };
   }, [objectColor, backgroundColor]);
 
   useEffect(() => {
-    if (meshRef.current) {
+    if (meshRef.current && shadowMeshRef.current) {
       const { x, y, z } = rotation;
       // Convert degrees to radians and set a common Euler order
       const euler = new THREE.Euler(
@@ -101,14 +114,25 @@ const Scene: React.FC<SceneProps> = ({ rotation, rotationMode, objectColor, back
         'YXZ' 
       );
       
+      const mainCube = meshRef.current;
+      const shadowCube = shadowMeshRef.current;
+
       if (rotationMode === 'euler') {
-        meshRef.current.rotation.copy(euler);
-        // Important: ensure quaternion is in sync if we switch back
-        meshRef.current.quaternion.setFromEuler(meshRef.current.rotation);
-      } else {
-        meshRef.current.quaternion.setFromEuler(euler);
-         // Important: ensure euler is in sync if we switch back
-        meshRef.current.rotation.setFromQuaternion(meshRef.current.quaternion, euler.order);
+        // Main cube uses Euler, which can cause gimbal lock
+        mainCube.rotation.copy(euler);
+        mainCube.quaternion.setFromEuler(mainCube.rotation); // Sync for consistency
+
+        // Shadow cube uses Quaternion, which avoids gimbal lock
+        shadowCube.quaternion.setFromEuler(euler);
+        shadowCube.rotation.setFromQuaternion(shadowCube.quaternion, euler.order); // Sync for consistency
+      } else { // 'quaternion' mode
+        // Main cube uses Quaternion
+        mainCube.quaternion.setFromEuler(euler);
+        mainCube.rotation.setFromQuaternion(mainCube.quaternion, euler.order); // Sync for consistency
+
+        // Shadow cube uses Euler
+        shadowCube.rotation.copy(euler);
+        shadowCube.quaternion.setFromEuler(shadowCube.rotation); // Sync for consistency
       }
     }
   }, [rotation, rotationMode]);
