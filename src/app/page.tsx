@@ -52,13 +52,20 @@ export default function Home() {
 
     let frameId: number;
     const animationSequence = [
-        { target: { x: 0, y: 90, z: 0 }, duration: 1500 },
-        { target: { x: 0, y: 90, z: 0 }, duration: 300 },
-        { target: { x: 45, y: 90, z: 0 }, duration: 1200 },
-        { target: { x: 0, y: 90, z: 0 }, duration: 1200 },
-        { target: { x: 0, y: 90, z: 0 }, duration: 300 },
-        { target: { x: 0, y: 90, z: 45 }, duration: 1200 },
-        { target: { x: 0, y: 90, z: 0 }, duration: 1200 },
+      // 1. Move to gimbal lock position
+      { target: { x: 0, y: 90, z: 0 }, duration: 2000 },
+      // 2. Pause
+      { target: { x: 0, y: 90, z: 0 }, duration: 500 },
+      // 3. Attempt to rotate on X axis (roll)
+      { target: { x: 90, y: 90, z: 0 }, duration: 2000 },
+      // 4. Return to center from X
+      { target: { x: 0, y: 90, z: 0 }, duration: 2000 },
+      // 5. Pause
+      { target: { x: 0, y: 90, z: 0 }, duration: 500 },
+      // 6. Attempt to rotate on Z axis (yaw)
+      { target: { x: 0, y: 90, z: 90 }, duration: 2000 },
+      // 7. Return to center from Z
+      { target: { x: 0, y: 90, z: 0 }, duration: 2000 },
     ];
 
     const animate = (currentTime: number) => {
