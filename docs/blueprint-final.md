@@ -42,6 +42,7 @@ The final application evolved significantly from the initial concept based on it
 
 ---
 
-## Total Development Time
+## Development Timeline
 
-**Total Time:** Approximately 1 hour and 40 minutes.
+**Total Development Time:** Approximately 1 hour and 40 minutes.
+**Total Wall Clock Time:** 1 hour and 38 minutes (from 10:00 AM to 11:38 AM).
