@@ -110,8 +110,7 @@ export default function Home() {
       const targetQuaternion = new THREE.Quaternion().setFromEuler(
           new THREE.Euler(targetEuler.x * rad, targetEuler.y * rad, targetEuler.z * rad, 'XYZ')
       );
-      const interpolatedQuaternion = new THREE.Quaternion();
-      THREE.Quaternion.slerp(state.startQuaternion, targetQuaternion, interpolatedQuaternion, easedProgress);
+      const interpolatedQuaternion = state.startQuaternion.clone().slerp(targetQuaternion, easedProgress);
       setQuaternion(interpolatedQuaternion);
 
 
