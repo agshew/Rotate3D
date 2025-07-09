@@ -117,7 +117,7 @@ export default function Home() {
       rotation.x * (Math.PI / 180),
       rotation.y * (Math.PI / 180),
       rotation.z * (Math.PI / 180),
-      'YXZ' // Match the order in scene.tsx
+      'XYZ' // Match the order in scene.tsx
     );
     const newQuaternion = new THREE.Quaternion().setFromEuler(euler);
     setQuaternion(newQuaternion);

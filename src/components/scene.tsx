@@ -106,7 +106,7 @@ const Scene: React.FC<SceneProps> = ({ rotation, quaternion, rotationMode, backg
           x * (Math.PI / 180),
           y * (Math.PI / 180),
           z * (Math.PI / 180),
-          'YXZ' 
+          'XYZ' 
         );
         // For Euler mode, we set the .rotation property directly.
         // This method is susceptible to Gimbal Lock because it's based
