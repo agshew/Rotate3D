@@ -16,7 +16,8 @@ export default function Home() {
   const [demoFinished, setDemoFinished] = useState(false);
 
   const animationState = useRef({
-    startRotation: { x: 0, y: 0, z: 0 },
+    startEuler: { x: 0, y: 0, z: 0 },
+    startQuaternion: new THREE.Quaternion(),
     startTime: 0,
     step: 0,
   });
@@ -31,14 +32,20 @@ export default function Home() {
 
     if (demoFinished) {
       setRotation({ x: 0, y: 0, z: 0 });
+      setQuaternion(new THREE.Quaternion());
       setDemoFinished(false);
       return;
     }
 
-    setRotation({ x: 0, y: 0, z: 0 }); // Reset to start position
+    const startEuler = { x: 0, y: 0, z: 0 };
+    const startQuaternion = new THREE.Quaternion();
+
+    setRotation(startEuler);
+    setQuaternion(startQuaternion.clone());
 
     animationState.current = {
-      startRotation: { x: 0, y: 0, z: 0 },
+      startEuler,
+      startQuaternion,
       startTime: performance.now(),
       step: 0,
     };
@@ -76,6 +83,9 @@ export default function Home() {
         setRotation({ x: 0, y: 90, z: 0 });
         setIsAnimating(false);
         setDemoFinished(true);
+        // Snap quaternion to final euler position for consistency after demo
+        const finalEuler = new THREE.Euler(0, 90 * (Math.PI / 180), 0, 'XYZ');
+        setQuaternion(new THREE.Quaternion().setFromEuler(finalEuler));
         return;
       }
 
@@ -85,22 +95,33 @@ export default function Home() {
       const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
       const easedProgress = easeOutCubic(progress);
 
-      const targetRotation = currentStepConfig.target;
+      const targetEuler = currentStepConfig.target;
 
-      const newRotation = {
-        x: state.startRotation.x + (targetRotation.x - state.startRotation.x) * easedProgress,
-        y: state.startRotation.y + (targetRotation.y - state.startRotation.y) * easedProgress,
-        z: state.startRotation.z + (targetRotation.z - state.startRotation.z) * easedProgress,
+      // --- Euler Update (interpolating angles, shows gimbal lock) ---
+      const newEulerRotation = {
+        x: state.startEuler.x + (targetEuler.x - state.startEuler.x) * easedProgress,
+        y: state.startEuler.y + (targetEuler.y - state.startEuler.y) * easedProgress,
+        z: state.startEuler.z + (targetEuler.z - state.startEuler.z) * easedProgress,
       };
+      setRotation(newEulerRotation);
 
-      setRotation(newRotation);
+      // --- Quaternion Update (interpolating with SLERP, avoids gimbal lock) ---
+      const rad = Math.PI / 180;
+      const targetQuaternion = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(targetEuler.x * rad, targetEuler.y * rad, targetEuler.z * rad, 'XYZ')
+      );
+      const interpolatedQuaternion = new THREE.Quaternion();
+      THREE.Quaternion.slerp(state.startQuaternion, targetQuaternion, interpolatedQuaternion, easedProgress);
+      setQuaternion(interpolatedQuaternion);
+
 
       if (progress < 1) {
         frameId = requestAnimationFrame(animate);
       } else {
         animationState.current.step += 1;
         animationState.current.startTime = performance.now();
-        animationState.current.startRotation = newRotation;
+        animationState.current.startEuler = newEulerRotation;
+        animationState.current.startQuaternion = interpolatedQuaternion;
         frameId = requestAnimationFrame(animate);
       }
     };
@@ -113,6 +134,9 @@ export default function Home() {
   }, [isAnimating]);
 
   useEffect(() => {
+    // When not animating, the quaternion view should match the euler view exactly.
+    if (isAnimating) return;
+
     const euler = new THREE.Euler(
       rotation.x * (Math.PI / 180),
       rotation.y * (Math.PI / 180),
@@ -121,7 +145,7 @@ export default function Home() {
     );
     const newQuaternion = new THREE.Quaternion().setFromEuler(euler);
     setQuaternion(newQuaternion);
-  }, [rotation]);
+  }, [rotation, isAnimating]);
 
   const isGimbalLockImminent = Math.abs(rotation.y) >= 88;
   const buttonText = isAnimating ? 'Animating...' : (demoFinished ? 'Reset View' : 'Demonstrate Gimbal Lock');
