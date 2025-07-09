@@ -13,9 +13,15 @@ interface SceneProps {
 const Scene: React.FC<SceneProps> = ({ rotation, quaternion, rotationMode, backgroundColor }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const meshRef = useRef<THREE.Mesh | null>(null);
+  
+  // Refs for gimbal groups in Euler mode
+  const gimbalXRef = useRef<THREE.Group>();
+  const gimbalYRef = useRef<THREE.Group>();
+  const gimbalZRef = useRef<THREE.Group>();
+
+  // Ref for the single group in Quaternion mode
+  const quaternionGroupRef = useRef<THREE.Group>();
+
   const animationFrameId = useRef<number>();
 
   useEffect(() => {
@@ -23,45 +29,86 @@ const Scene: React.FC<SceneProps> = ({ rotation, quaternion, rotationMode, backg
 
     // Scene
     const scene = new THREE.Scene();
-    sceneRef.current = scene;
 
     // Camera
     const camera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
-    camera.position.z = 5;
-    cameraRef.current = camera;
+    camera.position.set(0, 2, 7);
+    camera.lookAt(0, 0, 0);
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     renderer.setClearColor(backgroundColor, 1);
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    // 3D Object
-    const geometry = new THREE.BoxGeometry(2, 2, 2);
-    const materials = [
-      new THREE.MeshStandardMaterial({ color: 0xff4136, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // right (+x) - red
-      new THREE.MeshStandardMaterial({ color: 0x2ecc40, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // left (-x) - green
-      new THREE.MeshStandardMaterial({ color: 0x0074d9, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // top (+y) - blue
-      new THREE.MeshStandardMaterial({ color: 0xffdc00, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // bottom (-y) - yellow
-      new THREE.MeshStandardMaterial({ color: 0xf012be, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // front (+z) - magenta
-      new THREE.MeshStandardMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide }), // back (-z) - cyan
-    ];
-    const mesh = new THREE.Mesh(geometry, materials);
-    meshRef.current = mesh;
-    scene.add(mesh);
+    // Common material properties
+    const materialProps = {
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+    };
     
-    // Coordinate Axes (Standard colors for clarity)
-    const axesHelper = new THREE.AxesHelper(2.5);
-    scene.add(axesHelper);
+    // Central object (payload)
+    const payloadGeometry = new THREE.BoxGeometry(0.2, 0.4, 1.5);
+    const payloadMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const payload = new THREE.Mesh(payloadGeometry, payloadMaterial);
 
+    if (rotationMode === 'euler') {
+      const gimbalX = new THREE.Group();
+      const gimbalY = new THREE.Group();
+      const gimbalZ = new THREE.Group();
+
+      const ringMaterialX = new THREE.MeshStandardMaterial({ color: 0xff4136, ...materialProps }); // Red
+      const ringMaterialY = new THREE.MeshStandardMaterial({ color: 0x2ecc40, ...materialProps }); // Green
+      const ringMaterialZ = new THREE.MeshStandardMaterial({ color: 0x0074d9, ...materialProps }); // Blue
+
+      const ringX = new THREE.Mesh(new THREE.TorusGeometry(2, 0.05, 16, 100), ringMaterialX);
+      const ringY = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.05, 16, 100), ringMaterialY);
+      const ringZ = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.05, 16, 100), ringMaterialZ);
+      
+      ringX.rotation.y = Math.PI / 2; // Orient to YZ plane for X-axis rotation
+      ringY.rotation.x = Math.PI / 2; // Orient to XZ plane for Y-axis rotation
+
+      gimbalX.add(ringX);
+      gimbalY.add(ringY);
+      gimbalZ.add(ringZ);
+      gimbalZ.add(payload);
+
+      // Nest gimbals for XYZ rotation order
+      gimbalY.add(gimbalZ);
+      gimbalX.add(gimbalY);
+      scene.add(gimbalX);
+
+      gimbalXRef.current = gimbalX;
+      gimbalYRef.current = gimbalY;
+      gimbalZRef.current = gimbalZ;
+    } else { // quaternion mode
+      const group = new THREE.Group();
+      quaternionGroupRef.current = group;
+
+      const ringMaterialX = new THREE.MeshStandardMaterial({ color: 0xff4136, ...materialProps });
+      const ringMaterialY = new THREE.MeshStandardMaterial({ color: 0x2ecc40, ...materialProps });
+      const ringMaterialZ = new THREE.MeshStandardMaterial({ color: 0x0074d9, ...materialProps });
+
+      const ringX = new THREE.Mesh(new THREE.TorusGeometry(2, 0.05, 16, 100), ringMaterialX);
+      const ringY = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.05, 16, 100), ringMaterialY);
+      const ringZ = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.05, 16, 100), ringMaterialZ);
+      
+      ringX.rotation.y = Math.PI / 2;
+      ringY.rotation.x = Math.PI / 2;
+
+      group.add(ringX, ringY, ringZ, payload);
+      scene.add(group);
+    }
+    
     // Animation loop
     const animate = () => {
       animationFrameId.current = requestAnimationFrame(animate);
@@ -87,37 +134,32 @@ const Scene: React.FC<SceneProps> = ({ rotation, quaternion, rotationMode, backg
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
       }
-      if (rendererRef.current && mountRef.current) {
+      if (rendererRef.current && mountRef.current?.contains(rendererRef.current.domElement)) {
         mountRef.current.removeChild(rendererRef.current.domElement);
       }
-      // Dispose Three.js objects
-      geometry.dispose();
-      materials.forEach(material => material.dispose());
       renderer.dispose();
+      scene.traverse(object => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if(Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      })
     };
-  }, [backgroundColor]);
+  }, [backgroundColor, rotationMode]);
 
   useEffect(() => {
-    if (meshRef.current) {
-      const cube = meshRef.current;
-      if (rotationMode === 'euler' && rotation) {
+    if (rotationMode === 'euler' && rotation && gimbalXRef.current && gimbalYRef.current && gimbalZRef.current) {
         const { x, y, z } = rotation;
-        const euler = new THREE.Euler(
-          x * (Math.PI / 180),
-          y * (Math.PI / 180),
-          z * (Math.PI / 180),
-          'XYZ' 
-        );
-        // For Euler mode, we set the .rotation property directly.
-        // This method is susceptible to Gimbal Lock because it's based
-        // on applying rotations sequentially around axes.
-        cube.rotation.copy(euler);
-      } else if (rotationMode === 'quaternion' && quaternion) {
-        // For Quaternion mode, we are passed a pre-computed quaternion.
-        // This represents the orientation as a single, unified rotation, which
-        // avoids the inherent problems of Euler angle sequences.
-        cube.quaternion.copy(quaternion);
-      }
+        const rad = Math.PI / 180;
+        gimbalXRef.current.rotation.x = x * rad;
+        gimbalYRef.current.rotation.y = y * rad;
+        gimbalZRef.current.rotation.z = z * rad;
+    } else if (rotationMode === 'quaternion' && quaternion && quaternionGroupRef.current) {
+      quaternionGroupRef.current.quaternion.copy(quaternion);
     }
   }, [rotation, quaternion, rotationMode]);
 
