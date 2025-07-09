@@ -52,7 +52,7 @@ export default function Home() {
     setEulerRotation({ ...eulerRotation, [axis]: value });
   };
   
-  const animationSequence = [
+  const quatAnimationSequence = [
     { target: { x: 0, y: 90, z: 0 }, duration: 2000 },
     { duration: 500 },
     { target: { x: 90, y: 90, z: 0 }, duration: 2000 },
@@ -60,6 +60,20 @@ export default function Home() {
     { target: { x: 0, y: 90, z: 90 }, duration: 2000 },
     { duration: 500 },
     { target: { x: 0, y: 0, z: 0 }, duration: 2000 },
+  ];
+
+  const eulerAnimationSequence = [
+    { target: { x: 0, y: 90, z: 0 }, duration: 2000 }, // 1. Go to lock position
+    { duration: 500 }, // 2. Pause
+    { target: { x: 45, y: 90, z: 0 }, duration: 1500 }, // 3. Wiggle X
+    { target: { x: -45, y: 90, z: 0 }, duration: 1500 },
+    { target: { x: 0, y: 90, z: 0 }, duration: 1500 },
+    { duration: 500 }, // 4. Pause
+    { target: { x: 0, y: 90, z: 45 }, duration: 1500 }, // 5. Wiggle Z
+    { target: { x: 0, y: 90, z: -45 }, duration: 1500 },
+    { target: { x: 0, y: 90, z: 0 }, duration: 1500 },
+    { duration: 500 }, // 6. Pause
+    { target: { x: 0, y: 0, z: 0 }, duration: 2000 }, // 7. Reset
   ];
 
   // Demo handler for Quaternion
@@ -101,7 +115,7 @@ export default function Home() {
 
     const animateQuat = (currentTime: number) => {
       const state = quatAnimationState.current;
-      const currentStepConfig = animationSequence[state.step];
+      const currentStepConfig = quatAnimationSequence[state.step];
 
       if (!currentStepConfig) {
         setIsQuatAnimating(false);
@@ -149,7 +163,7 @@ export default function Home() {
 
     const animateEuler = (currentTime: number) => {
       const state = eulerAnimationState.current;
-      const currentStepConfig = animationSequence[state.step];
+      const currentStepConfig = eulerAnimationSequence[state.step];
 
       if (!currentStepConfig) {
         setIsEulerAnimating(false);
